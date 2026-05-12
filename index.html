@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MathCup 🧮</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(145deg, #0f172a, #1e293b);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            touch-action: manipulation;
+            color: #f1f5f9;
+        }
+        .app {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(24px);
+            border-radius: 28px;
+            padding: 24px 18px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        h1 {
+            font-size: 2em;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #fbbf24;
+        }
+        .menu-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #e2e8f0;
+            padding: 16px 18px;
+            border-radius: 16px;
+            font-size: 1.1em;
+            font-weight: 500;
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .menu-btn:active {
+            background: rgba(255,255,255,0.15);
+            transform: scale(0.98);
+        }
+        .btn {
+            background: #fbbf24;
+            color: #0f172a;
+            font-weight: 700;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-size: 1em;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            transition: 0.2s;
+            text-align: center;
+        }
+        .btn:active {
+            background: #f59e0b;
+            transform: scale(0.97);
+        }
+        .btn:disabled {
+            background: #64748b;
+            color: #cbd5e1;
+            cursor: not-allowed;
+        }
+        .option {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.18);
+            padding: 14px 16px;
+            border-radius: 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: 0.15s;
+            font-size: 1em;
+        }
+        .option:active {
+            background: rgba(251, 191, 36, 0.2);
+            border-color: #fbbf24;
+            transform: scale(0.98);
+        }
+        .option.selected {
+            background: #fbbf24;
+            color: #0f172a;
+            font-weight: 700;
+            border-color: #fbbf24;
+        }
+        .progress {
+            height: 6px;
+            background: #334155;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #fbbf24;
+            transition: width 0.3s;
+        }
+        .counter {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+        }
+        .result-box {
+            background: rgba(255,255,255,0.06);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .cups {
+            font-size: 1.8em;
+            color: #fbbf24;
+            font-weight: 800;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .small {
+            font-size: 0.9em;
+            color: #cbd5e1;
+        }
+        .achievement {
+            background: rgba(34,197,94,0.2);
+            border: 1px solid #22c55e;
+            border-radius: 16px;
+            padding: 12px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <!-- динамическое содержимое -->
+</div>
+<script>
+    // ---------- БАЗА ВОПРОСОВ ----------
+    const QUESTION_BANK = [
+        // easy (1-4 класс) – теперь 10 вопросов, чтобы хватило на полный тест
+        { id:0, level:'easy', type:'quiz', question:'Сколько будет 15 + 8?', options:['21','22','23','24'], correct:1, explanation:'15 + 8 = 23' },
+        { id:1, level:'easy', type:'quiz', question:'Какое число пропущено: 7, 14, 21, __, 35', options:['26','27','28','29'], correct:2, explanation:'Таблица умножения на 7: 7×4=28' },
+        { id:2, level:'easy', type:'quiz', question:'Сколько минут в 2 часах?', options:['60','100','120','150'], correct:2, explanation:'1 час = 60 мин, 2×60=120' },
+        { id:3, level:'easy', type:'quiz', question:'Периметр квадрата со стороной 5 см?', options:['10 см','15 см','20 см','25 см'], correct:2, explanation:'P=4×5=20 см' },
+        { id:4, level:'easy', type:'quiz', question:'Что больше: 1/2 или 1/3?', options:['1/2','1/3','Они равны','Не знаю'], correct:0, explanation:'1/2 = 0.5, 1/3 ≈ 0.33' },
+        // дополнительные 5 лёгких
+        { id:10, level:'easy', type:'quiz', question:'Результат умножения 6×7', options:['36','42','48','56'], correct:1, explanation:'6×7=42' },
+        { id:11, level:'easy', type:'quiz', question:'Сколько сторон у треугольника?', options:['2','3','4','5'], correct:1, explanation:'У треугольника 3 стороны' },
+        { id:12, level:'easy', type:'quiz', question:'Длина отрезка 3 см, его увеличили в 4 раза. Какая стала длина?', options:['7 см','10 см','12 см','15 см'], correct:2, explanation:'3×4=12 см' },
+        { id:13, level:'easy', type:'quiz', question:'Чему равна половина от 50?', options:['20','25','30','35'], correct:1, explanation:'50/2=25' },
+        { id:14, level:'easy', type:'quiz', question:'В каком числе 3 десятка и 4 единицы?', options:['43','34','30','40'], correct:1, explanation:'3 десятка и 4 единицы = 34' },
+        // middle (5-7 класс) (оставим 5 + динамика)
+        { id:5, level:'middle', type:'quiz', question:'Решите уравнение: 3x - 7 = 14', options:['5','6','7','8'], correct:2, explanation:'3x=21 → x=7' },
+        { id:6, level:'middle', type:'quiz', question:'Площадь прямоугольника 24 см², длина 6 см. Чему равна ширина?', options:['2 см','3 см','4 см','5 см'], correct:2, explanation:'24/6=4 см' },
+        { id:7, level:'middle', type:'quiz', question:'Сколько процентов составляет число 25 от 200?', options:['10%','12.5%','15%','20%'], correct:1, explanation:'25/200=0.125=12.5%' },
+        { id:15, level:'middle', type:'quiz', question:'Среднее арифметическое чисел 4 и 6', options:['4','5','6','10'], correct:1, explanation:'(4+6)/2=5' },
+        { id:16, level:'middle', type:'quiz', question:'Округлите 15,7 до целых', options:['15','16','10','20'], correct:1, explanation:'15,7 ≈ 16' },
+        // hard (8+ класс) (5 + динамика)
+        { id:8, level:'hard', type:'quiz', question:'Чему равен дискриминант уравнения x² - 5x + 6 = 0?', options:['1','25','-1','0'], correct:0, explanation:'D=25-24=1' },
+        { id:9, level:'hard', type:'quiz', question:'Логарифм 1000 по основанию 10:', options:['1','2','3','10'], correct:2, explanation:'10³=1000' },
+        { id:17, level:'hard', type:'quiz', question:'Производная функции x²', options:['x','2x','2','x²'], correct:1, explanation:'(x²)′=2x' },
+        { id:18, level:'hard', type:'quiz', question:'Чему равен sin(90°)?', options:['0','1','0.5','-1'], correct:1, explanation:'sin(90°)=1' },
+        { id:19, level:'hard', type:'quiz', question:'Число π (пи) приблизительно равно', options:['2.14','3.14','3.41','2.41'], correct:1, explanation:'π ≈ 3,14' }
+    ];
+
+    // ---------- ГЕНЕРАТОР ДИНАМИЧЕСКИХ ЗАДАЧ ----------
+    function randomInt(min,max) { return Math.floor(Math.random()*(max-min+1))+min; }
+    function shuffle(arr) { for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+    const ITEMS_EASY = ['ручка','тетрадь','карандаш','ластик','линейка'];
+    const ITEMS_MID = ['книга','билет','набор фломастеров','пенал','рюкзак'];
+    const ITEMS_HARD = ['телефон','куртка','кроссовки','наушники','планшет'];
+
+    function generateDynamicQuestion(difficulty) {
+        let type = ['discount_find_final','percent_of','tax_calc','budget_split'][randomInt(0,3)];
+        let price, percent, answer, explanation, questionText;
+        const items = difficulty==='easy'? ITEMS_EASY : (difficulty==='middle'? ITEMS_MID : ITEMS_HARD);
+        const item = items[randomInt(0,items.length-1)];
+        if(difficulty==='easy') {
+            price = randomInt(10,100);
+            percent = [10,20,25,50][randomInt(0,3)];
+        } else if(difficulty==='middle') {
+            price = randomInt(50,500);
+            percent = randomInt(5,30);
+        } else {
+            price = randomInt(200,2000);
+            percent = randomInt(5,40);
+        }
+        if(type==='discount_find_final') {
+            let discount = percent;
+            answer = Math.round(price * (100-discount)/100);
+            questionText = `В магазине на ${item} скидка ${discount}%. Изначальная цена ${price} руб. Сколько стоит ${item} со скидкой?`;
+            explanation = `${price} × (100-${discount})% = ${price} × ${(100-discount)/100} = ${answer} руб.`;
+        } else if(type==='percent_of') {
+            answer = Math.round(price * percent / 100);
+            questionText = `Сколько составит ${percent}% от ${price} рублей?`;
+            explanation = `${price} × ${percent}% = ${price} × ${percent/100} = ${answer} руб.`;
+        } else if(type==='tax_calc') {
+            let taxRate = 13;
+            answer = Math.round(price * taxRate / 100);
+            questionText = `Подоходный налог в Беларуси 13%. Какой налог удержат с зарплаты ${price} руб.?`;
+            explanation = `${price} × 13% = ${answer} руб.`;
+        } else if(type==='budget_split') {
+            answer = Math.round(price * percent / 100);
+            questionText = `Бюджет проекта ${price} руб. ${percent}% выделено на рекламу. Сколько это в рублях?`;
+            explanation = `${price} × ${percent}% = ${answer} руб.`;
+        }
+        let options = new Set();
+        options.add(answer);
+        while(options.size<4) {
+            let offset = randomInt(-Math.floor(answer*0.3), Math.floor(answer*0.3));
+            let wrong = answer + offset;
+            if(wrong<=0) wrong = answer + randomInt(1,10);
+            options.add(wrong);
+        }
+        return {
+            question: questionText,
+            options: shuffle([...options].map(String)),
+            correct: answer.toString(),
+            explanation: explanation
+        };
+    }
+
+    // ---------- ХРАНИЛИЩЕ ДАННЫХ (localStorage) ----------
+    const STORAGE_KEY = 'mathcup_data';
+    let appData = {
+        achievements: [],        // ['10/10','Знаток','Эксперт']
+        stats: {
+            testsCompleted: 0,
+            bestResult: {score:0,total:0},
+            lastResult: {score:0,total:0},
+            totalCorrect: 0,
+            totalQuestions: 0
+        },
+        correctAnswers: [],      // индексы отвеченных вопросов из банка
+        weeklyCups: 0,
+        levelMax: {easy:0, middle:0, hard:0} // 1 = идеальный тест этого уровня был
+    };
+
+    function loadData() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if(saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                appData = {...appData, ...parsed};
+            } catch(e){}
+        }
+    }
+    function saveData() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    // ---------- СОСТОЯНИЕ СЕССИИ ----------
+    let currentMode = null; // 'classic','random','infinite'
+    let session = {
+        difficulty: null,
+        questions: [],        // массив {question,options,correct,explanation, type:'quiz'/'dynamic', quizIndex}
+        currentIndex: 0,
+        score: 0,
+        total: 0,
+        answers: [],          // true/false
+        infiniteScore: 0,
+        infiniteStreak: 0
+    };
+
+    let selectedOptionIndex = null;
+
+    // ---------- РЕНДЕРИНГ ----------
+    const appDiv = document.getElementById('app');
+
+    function render(html) { appDiv.innerHTML = html; }
+
+    function showMainMenu() {
+        currentMode = null;
+        render(`
+            <h1>🧮 MathCup</h1>
+            <button class="menu-btn" onclick="startClassic()">▶️ Начать тест</button>
+            <button class="menu-btn" onclick="startRandom()">🎲 Случайная задача</button>
+            <button class="menu-btn" onclick="startInfinite()">🎲 Бесконечная тренировка</button>
+            <button class="menu-btn" onclick="showAchievements()">🏅 Достижения</button>
+            <button class="menu-btn" onclick="showStats()">📊 Моя статистика</button>
+            <button class="menu-btn" onclick="showAbout()">ℹ️ О боте</button>
+        `);
+    }
+
+    function selectDifficulty(mode) {
+        currentMode = mode;
+        render(`
+            <h2>Выбери уровень</h2>
+            <button class="menu-btn" onclick="startSession('easy')">1–4 класс</button>
+            <button class="menu-btn" onclick="startSession('middle')">5–7 класс</button>
+            <button class="menu-btn" onclick="startSession('hard')">8+ класс</button>
+            <button class="btn" onclick="showMainMenu()">↩️ Выход</button>
+        `);
+    }
+
+    function startClassic() { selectDifficulty('classic'); }
+    function startRandom() { selectDifficulty('random'); }
+    function startInfinite() { selectDifficulty('infinite'); }
+
+    function startSession(difficulty) {
+        session.difficulty = difficulty;
+        selectedOptionIndex = null;
+        if(currentMode === 'classic') {
+            buildClassicTest(difficulty);
+            renderQuiz();
+        } else if(currentMode === 'random') {
+            session.questions = [generateDynamicQuestion(difficulty)];
+            session.currentIndex = 0;
+            session.score = 0;
+            session.total = 1;
+            renderQuiz();
+        } else if(currentMode === 'infinite') {
+            session.infiniteScore = 0;
+            session.infiniteStreak = 0;
+            session.questions = [generateDynamicQuestion(difficulty)];
+            session.currentIndex = 0;
+            renderInfinite();
+        }
+    }
+
+    function buildClassicTest(level) {
+        let quizQuestions = [];
+        let dynamicCount = 0;
+        if(level === 'easy') {
+            // для easy берём все 10 вопросов (или сколько есть, но у нас 10)
+            quizQuestions = QUESTION_BANK.filter(q=>q.level==='easy');
+            // динамические не добавляем, т.к. 10 и так хватает
+            dynamicCount = 0;
+        } else if(level === 'middle') {
+            quizQuestions = QUESTION_BANK.filter(q=>q.level==='middle');
+            dynamicCount = 5; // 5 тестовых + 5 динамических
+        } else {
+            quizQuestions = QUESTION_BANK.filter(q=>q.level==='hard');
+            dynamicCount = 5;
+        }
+        let quizPool = shuffle([...quizQuestions]);
+        let mixed = [];
+        // для middle и hard чередуем: всего 10 вопросов
+        if(level === 'easy') {
+            // просто все 10 из банка
+            for(let i=0; i<quizPool.length && i<10; i++) {
+                mixed.push({...quizPool[i], type:'quiz', quizIndex: quizPool[i].id});
+            }
+        } else {
+            // 10 вопросов: сначала 5 из банка, потом 5 динамических, чередуя
+            for(let i=0; i<5; i++) {
+                if(quizPool.length > i) {
+                    mixed.push({...quizPool[i], type:'quiz', quizIndex: quizPool[i].id});
+                } else {
+                    mixed.push({...generateDynamicQuestion(level), type:'dynamic', quizIndex: -1});
+                }
+            }
+            for(let i=0; i<dynamicCount; i++) {
+                mixed.push({...generateDynamicQuestion(level), type:'dynamic', quizIndex: -1});
+            }
+            // перемешаем, чтобы динамические не шли подряд все
+            mixed = shuffle(mixed);
+        }
+        session.questions = mixed;
+        session.currentIndex = 0;
+        session.score = 0;
+        session.total = 10;
+        session.answers = [];
+    }
+
+    function renderQuiz() {
+        if(session.currentIndex >= session.questions.length) {
+            if(currentMode === 'classic') finishClassicTest();
+            else if(currentMode === 'random') showMainMenu();
+            return;
+        }
+        const q = session.questions[session.currentIndex];
+        const progress = (session.currentIndex / session.questions.length)*100;
+        const isLast = session.currentIndex === session.questions.length-1;
+        let html = `
+            <div class="progress"><div class="progress-fill" style="width:${progress}%"></div></div>
+            <div class="counter">Вопрос ${session.currentIndex+1} из ${session.questions.length}</div>
+            <div style="font-size:1.2em; margin:15px 0;">${q.question}</div>
+            <div id="optionsContainer">`;
+        q.options.forEach((opt,idx)=>{
+            html += `<div class="option" onclick="selectOption(${idx}, this)">${opt}</div>`;
+        });
+        html += `</div>
+            <button class="btn" id="nextBtn" disabled onclick="nextQuestion()">${isLast ? 'Узнать результат 🏆' : 'Следующий вопрос ➡️'}</button>
+            ${currentMode!=='infinite' ? '<button class="btn" style="background:#475569;color:white;" onclick="showMainMenu()">↩️ Выход</button>' : ''}
+        `;
+        render(html);
+        selectedOptionIndex = null;
+    }
+
+    function selectOption(idx, element) {
+        document.querySelectorAll('.option').forEach(el=>el.classList.remove('selected'));
+        element.classList.add('selected');
+        selectedOptionIndex = idx;
+        document.getElementById('nextBtn').disabled = false;
+    }
+
+    function nextQuestion() {
+        const q = session.questions[session.currentIndex];
+        const userAnswer = q.options[selectedOptionIndex];
+        const isCorrect = (userAnswer === q.correct);
+        if(isCorrect) {
+            session.score++;
+            if(q.type === 'quiz' && q.quizIndex !== -1) {
+                if(!appData.correctAnswers.includes(q.quizIndex)) {
+                    appData.correctAnswers.push(q.quizIndex);
+                }
+            }
+        }
+        session.answers.push(isCorrect);
+        if(currentMode === 'classic') {
+            session.currentIndex++;
+            if(session.currentIndex >= session.questions.length) {
+                finishClassicTest();
+            } else {
+                renderQuiz();
+            }
+        } else if(currentMode === 'random') {
+            let resultHtml = `<h2>${isCorrect ? '✅ Верно!' : '❌ Ошибка'}</h2>`;
+            resultHtml += `<p>${q.explanation}</p>`;
+            resultHtml += `<button class="btn" onclick="showMainMenu()">В меню</button>`;
+            render(resultHtml);
+        }
+        saveData();
+    }
+
+    function finishClassicTest() {
+        const cups = session.score * 0.5;
+        appData.weeklyCups += cups;
+        appData.stats.testsCompleted++;
+        appData.stats.totalCorrect += session.score;
+        appData.stats.totalQuestions += session.total;
+        let acc = session.total>0 ? session.score/session.total : 0;
+        if(!appData.stats.bestResult || appData.stats.bestResult.score < session.score) {            appData.stats.bestResult = {score:session.score, total:session.total};
+        }
+        appData.stats.lastResult = {score:session.score, total:session.total};
+        // проверка ачивок
+        checkAchievements(session.score, session.total, session.difficulty);
+        saveData();
+        let cupsWord = getCupsWord(cups);
+        render(`
+            <h2>🏁 Тест завершён!</h2>
+            <div class="result-box">
+                <p>Уровень: ${getLevelName(session.difficulty)}</p>
+                <p>Правильных ответов: ${session.score} из ${session.total}</p>
+                <p class="cups">+${cups} ${cupsWord}</p>
+            </div>
+            <button class="btn" onclick="showMainMenu()">В меню</button>
+        `);
+    }
+
+    function renderInfinite() {
+        if(!session.questions.length) {
+            session.questions.push(generateDynamicQuestion(session.difficulty));
+        }
+        const q = session.questions[session.currentIndex];
+        let html = `
+            <div style="display:flex; justify-content: space-between; margin-bottom:10px;">
+                <span>Счёт: ${session.infiniteScore}</span>
+                <span>Серия: ${session.infiniteStreak}</span>
+            </div>
+            <div style="font-size:1.2em; margin:15px 0;">${q.question}</div>
+            <div id="optionsContainer">`;
+        q.options.forEach((opt,idx)=>{
+            html += `<div class="option" onclick="selectInfiniteOption(${idx}, this)">${opt}</div>`;
+        });
+        html += `</div>
+            <button class="btn" id="infNextBtn" disabled onclick="nextInfinite()">Ответить</button>
+            <button class="btn" style="background:#475569;color:white;" onclick="finishInfinite()">🏁 Закончить тренировку</button>
+        `;
+        render(html);
+        selectedOptionIndex = null;
+    }
+
+    function selectInfiniteOption(idx, element) {
+        document.querySelectorAll('.option').forEach(el=>el.classList.remove('selected'));
+        element.classList.add('selected');
+        selectedOptionIndex = idx;
+        document.getElementById('infNextBtn').disabled = false;
+    }
+
+    function nextInfinite() {
+        const q = session.questions[session.currentIndex];
+        const isCorrect = (q.options[selectedOptionIndex] === q.correct);
+        if(isCorrect) {
+            session.infiniteScore++;
+            session.infiniteStreak++;
+        } else {
+            session.infiniteStreak = 0;
+        }
+        // Генерируем новый вопрос и переходим
+        session.questions.push(generateDynamicQuestion(session.difficulty));
+        session.currentIndex++;
+        // Ограничим длину массива, чтобы не переполнять память
+        if(session.questions.length > 100) {
+            session.questions = session.questions.slice(-50);
+            session.currentIndex = session.questions.length - 1;
+        }
+        selectedOptionIndex = null;
+        renderInfinite();
+    }
+
+    function finishInfinite() {
+        appData.stats.totalCorrect += session.infiniteScore;
+        appData.stats.totalQuestions += session.infiniteScore + (session.infiniteStreak>0 ? 0 : 0);
+        saveData();
+        let msg = `Тренировка окончена. Счёт: ${session.infiniteScore}, рекордная серия: ${session.infiniteStreak}`;
+        render(`
+            <h2>🏁 Бесконечная тренировка</h2>
+            <p>${msg}</p>
+            <button class="btn" onclick="showMainMenu()">В меню</button>
+        `);
+    }
+
+    // ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
+    function getCupsWord(num) {
+        const n = Math.abs(num);
+        if (n % 10 === 1 && n % 100 !== 11) return 'кубок';
+        if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'кубка';
+        return 'кубков';
+    }
+
+    function getLevelName(diff) {
+        if (diff === 'easy') return '1–4 класс';
+        if (diff === 'middle') return '5–7 класс';
+        return '8+ класс';
+    }
+
+    function showAchievements() {
+        let list = appData.achievements.length
+            ? appData.achievements.map(a => `<div class="achievement">🏅 ${a}</div>`).join('')
+            : '<p>Пока нет достижений</p>';
+        render(`
+            <h2>🏅 Достижения</h2>
+            ${list}
+            <button class="btn" onclick="showMainMenu()">Назад</button>
+        `);
+    }
+
+    function showStats() {
+        const s = appData.stats;
+        render(`
+            <h2>📊 Моя статистика</h2>
+            <div class="stats-row"><span>Пройдено тестов</span><span>${s.testsCompleted}</span></div>
+            <div class="stats-row"><span>Лучший результат</span><span>${s.bestResult.score}/${s.bestResult.total}</span></div>
+            <div class="stats-row"><span>Всего правильных ответов</span><span>${s.totalCorrect}/${s.totalQuestions}</span></div>
+            <div class="stats-row"><span>Кубков собрано</span><span>${appData.weeklyCups}</span></div>
+            <button class="btn" onclick="showMainMenu()">Назад</button>
+        `);
+    }
+
+    function showAbout() {
+        render(`
+            <h2>ℹ️ О боте</h2>
+            <p>MathCup – тренажёр по математике для школьников. Выбирай уровень сложности и решай задачи, зарабатывая кубки. Удачи!</p>
+            <button class="btn" onclick="showMainMenu()">Назад</button>
+        `);
+    }
+
+    function checkAchievements(score, total, difficulty) {
+        if (score === total) {
+            let achName = '';
+            if (difficulty === 'easy') achName = 'Знаток';
+            else if (difficulty === 'middle') achName = 'Эксперт';
+            else achName = 'Гений';
+            if (!appData.achievements.includes(achName)) {
+                appData.achievements.push(achName);
+            }
+            if (difficulty === 'easy') appData.levelMax.easy = 1;
+            if (difficulty === 'middle') appData.levelMax.middle = 1;
+            if (difficulty === 'hard') appData.levelMax.hard = 1;
+        }
+        if (total === 10 && score === 10) {
+            if (!appData.achievements.includes('10/10')) {
+                appData.achievements.push('10/10');
+            }
+        }
+        if (appData.levelMax.easy && appData.levelMax.middle && appData.levelMax.hard) {
+            if (!appData.achievements.includes('Мастер всех уровней')) {
+                appData.achievements.push('Мастер всех уровней');
+            }
+        }
+        saveData();
+    }
+
+    // ---------- ИНИЦИАЛИЗАЦИЯ ----------
+    loadData();
+    showMainMenu();
+</script>
+</body>
+</html>
+        
